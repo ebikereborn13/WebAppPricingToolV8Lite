@@ -16,24 +16,11 @@
     .ebr-price-box.highlight { border-color: #FF6600; background: #fff5ee; }
     #ebr-error { margin-top: 15px; color: #d32f2f; display: none; text-align: center; font-weight: bold; }
 
-    /* Styles pour l'écran de verrouillage */
-    #ebr-lock-screen { text-align: center; padding: 40px 20px; background: #1a1a1a; color: white; border-radius: 8px; }
-    #ebr-lock-screen input { margin-bottom: 10px; text-align: center; }
-    #ebr-main-content { display: none; }
-
     /* Style pour les cases à cocher */
     .ebr-tva-container { background: #f0f0f0; padding: 10px; border-radius: 4px; margin-top: 15px; }
     .ebr-tva-option { display: flex !important; align-items: center; cursor: pointer; font-weight: normal !important; margin-top: 5px !important; }
     .ebr-tva-option input { width: auto !important; margin: 0 10px 0 0 !important; cursor: pointer; }
   </style>
-
-  <div id="ebr-lock-screen">
-    <div style="font-size: 40px; margin-bottom: 10px;">🚲</div>
-    <h2 style="margin-bottom: 20px;">Accès Privé EBR</h2>
-    <input type="password" id="ebr-auth-pass" placeholder="Entrez votre code">
-    <button type="button" id="ebr-auth-btn">Déverrouiller</button>
-    <p id="auth-error" style="color: #ff4444; display: none; font-size: 14px; margin-top: 10px;">Code incorrect</p>
-  </div>
 
   <div id="ebr-main-content">
     <form id="ebr-form">
@@ -134,18 +121,11 @@
     <div id="ebr-error">❌ Erreur de calcul. Veuillez réessayer.</div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-
   <script>
     (function () {
+      // Clé nécessaire pour l'authentification auprès de l'API Hugging Face
       const HASH_KEY = "28406f3871e106b1bb54c647618c087e839b8564d0856ed822f6461fd29de4f2";
       const PYTHON_API_URL = "https://ebikereborn-ebikereborn-pricing.hf.space/estimate";
-
-      const lockScreen = document.getElementById("ebr-lock-screen");
-      const mainContent = document.getElementById("ebr-main-content");
-      const passInput = document.getElementById("ebr-auth-pass");
-      const authBtn = document.getElementById("ebr-auth-btn");
-      const authError = document.getElementById("auth-error");
 
       const tvaMarge = document.getElementById("ebr-tva-marge");
       const tvaClassique = document.getElementById("ebr-tva-classique");
@@ -153,22 +133,13 @@
       tvaMarge.addEventListener("change", () => { if(tvaMarge.checked) tvaClassique.checked = false; });
       tvaClassique.addEventListener("change", () => { if(tvaClassique.checked) tvaMarge.checked = false; });
 
-      authBtn.addEventListener("click", function() {
-          const hashedInput = CryptoJS.SHA256(passInput.value).toString().toLowerCase();
-          if(hashedInput === HASH_KEY.toLowerCase()) {
-              lockScreen.style.display = "none";
-              mainContent.style.display = "block";
-          } else {
-              authError.style.display = "block";
-          }
-      });
-
       const form = document.getElementById("ebr-form");
       const yearSelect = document.getElementById("ebr-yearSelect");
       const btn = document.getElementById("ebr-submit-btn");
       const resReprise = document.getElementById("res-reprise");
       const errorBox = document.getElementById("ebr-error");
 
+      // Remplissage automatique des années
       const currentYear = new Date().getFullYear();
       for (let y = currentYear; y >= 2016; y--) {
         const opt = document.createElement("option");
