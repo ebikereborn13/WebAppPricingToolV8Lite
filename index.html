@@ -8,19 +8,20 @@
     #ebr-calculator button { margin-top: 20px; width: 100%; padding: 12px; background: #FF6600; font-size: 16px; font-weight: bold; color: #ffffff; border: none; border-radius: 4px; cursor: pointer; }
     #ebr-calculator button:hover { background: #e65c00; }
     #ebr-calculator button:disabled { background: #ccc; }
+    
+    /* Styles TVA corrigés */
+    .ebr-tva-container { background: #f0f0f0; padding: 10px; border-radius: 4px; margin-top: 15px; }
+    .ebr-tva-option { display: flex !important; align-items: center; cursor: pointer; font-weight: normal !important; margin-top: 5px !important; }
+    .ebr-tva-option input { width: auto !important; margin: 0 10px 0 0 !important; cursor: pointer; height: 18px; width: 18px; }
+
     .ebr-results-container { display: flex; justify-content: center; margin-top: 20px; }
     .ebr-price-box { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 8px; text-align: center; background: #f9f9f9; }
     .ebr-price-box span { display: block; font-size: 0.9em; color: #666; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
     .ebr-price-box div { font-size: 1.4em; font-weight: bold; color: #000; }
     .ebr-price-box.highlight { border-color: #FF6600; background: #fff5ee; }
     
-    /* Section 2FA */
     #ebr-2fa-section { display: none; margin-top: 25px; padding: 20px; border: 2px dashed #FF6600; border-radius: 8px; background: #fff; text-align: center; }
-    #ebr-2fa-trigger-btn { background: #000 !important; margin-top: 10px; }
-
-    .ebr-tva-container { background: #f0f0f0; padding: 10px; border-radius: 4px; margin-top: 15px; }
-    .ebr-tva-option { display: flex !important; align-items: center; cursor: pointer; font-weight: normal !important; margin-top: 5px !important; }
-    .ebr-tva-option input { width: auto !important; margin: 0 10px 0 0 !important; cursor: pointer; }
+    #ebr-2fa-trigger-btn { background: #000 !important; }
     #ebr-error { margin-top: 15px; color: #d32f2f; display: none; text-align: center; font-weight: bold; }
   </style>
 
@@ -38,7 +39,7 @@
       <select id="ebr-marque" required>
         <option value="">Sélectionner</option>
         <option>Moustache</option><option>Giant</option><option>Specialized</option><option>Trek</option><option>Cube</option>
-        <!-- Ajoutez d'autres marques si besoin -->
+        <option>Cannondale</option><option>Lapierre</option><option>Scott</option><option>Orbea</option><option>Mondraker</option>
       </select>
 
       <label>Modèle *</label>
@@ -56,15 +57,20 @@
       <label>Motorisation *</label>
       <select id="ebr-moteur" required>
         <option value="">Sélectionner</option>
-        <option>Bosch</option><option>Yamaha</option><option>Shimano</option><option>Brose</option>
+        <option>Bosch</option><option>Yamaha</option><option>Shimano</option><option>Brose</option><option>Avinox</option>
       </select>
 
       <label>Batterie (Wh) *</label>
       <input type="number" id="ebr-batterie" required />
 
       <div class="ebr-tva-container">
-        <label class="ebr-tva-option"><input type="checkbox" id="ebr-tva-marge"> TVA sur Marge</label>
-        <label class="ebr-tva-option"><input type="checkbox" id="ebr-tva-classique"> TVA Classique (HT)</label>
+        <label>Régime de TVA (obligatoire) *</label>
+        <label class="ebr-tva-option">
+          <input type="checkbox" id="ebr-tva-marge" class="tva-check"> Achat en TVA sur Marge
+        </label>
+        <label class="ebr-tva-option">
+          <input type="checkbox" id="ebr-tva-classique" class="tva-check"> Achat en TVA Classique (HT)
+        </label>
       </div>
       
       <button type="submit" id="ebr-submit-btn">Estimer le tarif de reprise</button>
@@ -77,10 +83,9 @@
       </div>
     </div>
 
-    <!-- Zone 2FA -->
     <div id="ebr-2fa-section">
       <p style="margin-bottom: 10px;"><strong>Ce prix vous convient ?</strong></p>
-      <p style="font-size: 13px; color: #555;">Cliquez ci-dessous pour valider votre identité et soumettre votre demande d'approbation officielle.</p>
+      <p style="font-size: 13px; color: #555;">Soumettez votre demande d'approbation officielle via notre service sécurisé.</p>
       <button type="button" id="ebr-2fa-trigger-btn">Envoyer ma demande d'approbation</button>
     </div>
 
@@ -91,7 +96,7 @@
     (function () {
       const HASH_KEY = "28406f3871e106b1bb54c647618c087e839b8564d0856ed822f6461fd29de4f2";
       const PRICING_API = "https://ebikereborn-ebikereborn-pricing.hf.space/estimate";
-      const AUTH_API = "https://ebikereborn-2fa.hf.space/predict"; // Adapté selon le type de Space (predict/estimate)
+      const AUTH_API = "https://ebikereborn-2fa.hf.space/predict"; 
 
       const form = document.getElementById("ebr-form");
       const btnSubmit = document.getElementById("ebr-submit-btn");
@@ -99,25 +104,39 @@
       const section2FA = document.getElementById("ebr-2fa-section");
       const btn2FA = document.getElementById("ebr-2fa-trigger-btn");
 
-      // Gestion TVA
+      // LOGIQUE D'EXCLUSION DES CASES A COCHER
       const tvaMarge = document.getElementById("ebr-tva-marge");
       const tvaClassique = document.getElementById("ebr-tva-classique");
-      tvaMarge.onclick = () => tvaClassique.checked = false;
-      tvaClassique.onclick = () => tvaMarge.checked = false;
 
-      // Années
+      tvaMarge.addEventListener("change", function() {
+        if(this.checked) tvaClassique.checked = false;
+      });
+
+      tvaClassique.addEventListener("change", function() {
+        if(this.checked) tvaMarge.checked = false;
+      });
+
+      // Remplissage Années
       const yearSelect = document.getElementById("ebr-yearSelect");
-      for (let y = 2026; y >= 2016; y--) {
+      const currentYear = new Date().getFullYear();
+      for (let y = currentYear; y >= 2016; y--) {
         let opt = document.createElement("option"); opt.value = y; opt.textContent = y;
         yearSelect.appendChild(opt);
       }
 
-      // ÉTAPE 1 : Calcul libre
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
+
+        // Validation TVA
+        if (!tvaMarge.checked && !tvaClassique.checked) {
+          alert("Veuillez sélectionner un régime de TVA.");
+          return;
+        }
+
         btnSubmit.disabled = true;
         btnSubmit.textContent = "Calcul en cours...";
         section2FA.style.display = "none";
+        document.getElementById("ebr-error").style.display = "none";
 
         const payload = {
           access_token: HASH_KEY,
@@ -137,13 +156,20 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
           });
+          
+          if (!resp.ok) throw new Error();
           const data = await resp.json();
           
           let prix = data.reprise;
-          if(tvaClassique.checked) prix = Math.round(prix * 0.833);
+          let label = "TTC";
+
+          if(tvaClassique.checked) {
+            prix = Math.round(prix * 0.833);
+            label = "HT";
+          }
           
-          resReprise.textContent = prix.toLocaleString() + " € " + (tvaClassique.checked ? "HT" : "TTC");
-          section2FA.style.display = "block"; // Affiche l'option 2FA
+          resReprise.textContent = prix.toLocaleString() + " € " + label;
+          section2FA.style.display = "block";
         } catch (err) {
           document.getElementById("ebr-error").style.display = "block";
         } finally {
@@ -152,7 +178,6 @@
         }
       });
 
-      // ÉTAPE 2 : Authentification et Approbation
       btn2FA.addEventListener("click", async () => {
         btn2FA.disabled = true;
         btn2FA.textContent = "⌛ Envoi vers 2FA...";
@@ -163,19 +188,19 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                data: [
-                 `Demande Reprise: ${document.getElementById("ebr-marque").value} ${document.getElementById("ebr-modele").value}`,
-                 `Prix calculé: ${resReprise.textContent}`
+                 `Vélo: ${document.getElementById("ebr-marque").value} ${document.getElementById("ebr-modele").value}`,
+                 `Prix: ${resReprise.textContent}`
                ]
             })
           });
 
           if (response.ok) {
-            alert("✅ Succès ! Votre demande a été transmise au service d'approbation.");
+            alert("✅ Succès ! Votre demande d'approbation a été envoyée.");
           } else {
-            alert("⚠️ Erreur de connexion au service 2FA.");
+            alert("⚠️ Erreur lors de l'envoi.");
           }
         } catch (err) {
-          alert("❌ Impossible de joindre le service 2FA.");
+          alert("❌ Service 2FA indisponible.");
         } finally {
           btn2FA.disabled = false;
           btn2FA.textContent = "Envoyer ma demande d'approbation";
