@@ -1,49 +1,62 @@
 <div id="ebr-calculator">
   <meta name="robots" content="noindex, nofollow">
   
+  <!-- Chargement des SDKs -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
-    /* Styles d'origine */
-    #ebr-calculator { font-family: Arial, sans-serif; max-width: 500px; margin: auto; position: relative; z-index: 1; }
-    #ebr-calculator label { font-weight: bold; display: block; margin-top: 10px; }
-    #ebr-calculator input, #ebr-calculator select { width: 100%; padding: 10px; margin-top: 4px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    #ebr-calculator button { margin-top: 20px; width: 100%; padding: 12px; background: #FF6600; font-size: 16px; font-weight: bold; color: #ffffff; border: none; border-radius: 4px; cursor: pointer; }
-    #ebr-calculator button:hover { background: #e65c00; }
-    #ebr-calculator button:disabled { background: #ccc; }
-    .ebr-results-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-    .ebr-price-box { padding: 15px; border: 2px solid #eee; border-radius: 8px; text-align: center; background: #f9f9f9; }
-    .ebr-price-box span { display: block; font-size: 0.9em; color: #666; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
-    .ebr-price-box div { font-size: 1.4em; font-weight: bold; color: #000; }
-    .ebr-price-box.highlight { border-color: #FF6600; background: #fff5ee; }
+    #ebr-calculator { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 500px; margin: auto; color: #333; }
+    #ebr-calculator label { font-weight: bold; display: block; margin-top: 15px; font-size: 0.9em; }
+    #ebr-calculator input, #ebr-calculator select { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
     
-    /* Nouveau style pour le compteur de vélos */
-    #ebr-sample-info { margin-top: 10px; text-align: center; font-size: 0.85em; color: #777; font-style: italic; display: none; }
+    /* Boutons */
+    #ebr-calculator .btn-main { margin-top: 25px; width: 100%; padding: 14px; background: #FF6600; font-size: 16px; font-weight: bold; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; transition: background 0.3s; }
+    #ebr-calculator .btn-main:hover { background: #e65c00; }
+    #ebr-calculator .btn-main:disabled { background: #ccc; cursor: not-allowed; }
+    #ebr-calculator .btn-logout { background: transparent; color: #666; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; float: right; border-radius: 4px; }
+
+    /* Login Screen */
+    #ebr-auth-screen { background: #f4f4f4; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
+    #ebr-auth-screen h2 { color: #FF6600; margin-top: 0; }
+    .auth-error { color: #d32f2f; font-size: 14px; margin-top: 10px; display: none; }
+
+    /* Main Content */
+    #ebr-main-content { display: none; background: white; padding: 20px; border-radius: 10px; }
     
+    /* Resultat unique (Reprise) */
+    .ebr-results-container { margin-top: 25px; }
+    .ebr-price-box { padding: 20px; border: 2px solid #FF6600; border-radius: 10px; text-align: center; background: #fff5ee; }
+    .ebr-price-box span { display: block; font-size: 0.9em; color: #FF6600; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
+    .ebr-price-box div { font-size: 2.2em; font-weight: bold; color: #000; }
+    
+    #ebr-sample-info { margin-top: 12px; text-align: center; font-size: 0.85em; color: #888; font-style: italic; }
     #ebr-error { margin-top: 15px; color: #d32f2f; display: none; text-align: center; font-weight: bold; }
-    #ebr-email-section { display: none; margin-top: 25px; padding: 15px; border: 2px dashed #FF6600; border-radius: 8px; background: #fff; }
-    #ebr-lock-screen { text-align: center; padding: 40px 20px; background: #1a1a1a; color: white; border-radius: 8px; }
-    #ebr-lock-screen input { margin-bottom: 10px; text-align: center; }
-    #ebr-main-content { display: none; }
-    #ebr-search-btn { background: #555; margin-top: 10px; font-size: 14px; padding: 8px; }
-    #ebr-search-btn:hover { background: #333; }
-    .ebr-tva-container { background: #f0f0f0; padding: 10px; border-radius: 4px; margin-top: 15px; }
-    .ebr-tva-option { display: flex !important; align-items: center; cursor: pointer; font-weight: normal !important; margin-top: 5px !important; }
-    .ebr-tva-option input { width: auto !important; margin: 0 10px 0 0 !important; cursor: pointer; }
+    
+    #ebr-search-btn { background: #f0f0f0; border: 1px solid #ccc; color: #333; margin-top: 10px; font-size: 13px; padding: 8px; width: 100%; border-radius: 4px; cursor: pointer; }
+    
+    .ebr-tva-container { background: #f9f9f9; padding: 12px; border-radius: 6px; border: 1px solid #eee; margin-top: 20px; }
+    .ebr-tva-option { display: flex !important; align-items: center; cursor: pointer; font-weight: normal !important; margin-top: 8px !important; }
+    .ebr-tva-option input { width: auto !important; margin: 0 10px 0 0 !important; }
   </style>
 
-  <div id="ebr-lock-screen">
-    <div style="font-size: 40px; margin-bottom: 10px;">🚲</div>
-    <h2 style="margin-bottom: 20px;">Accès Privé EBR</h2>
-    <input type="password" id="ebr-auth-pass" placeholder="Entrez votre code">
-    <button type="button" id="ebr-auth-btn">Déverrouiller</button>
-    <p id="auth-error" style="color: #ff4444; display: none; font-size: 14px; margin-top: 10px;">Code incorrect</p>
+  <!-- SCREEN 1: LOGIN -->
+  <div id="ebr-auth-screen">
+    <h2>🚲 Accès Partenaire</h2>
+    <p>Connectez-vous pour accéder à l'estimateur</p>
+    <input type="email" id="auth-email" placeholder="Votre email professionnel">
+    <input type="password" id="auth-password" placeholder="Mot de passe">
+    <button class="btn-main" id="btn-login">Se connecter</button>
+    <p class="auth-error" id="auth-error-msg">Email ou mot de passe incorrect</p>
   </div>
 
+  <!-- SCREEN 2: CALCULATEUR -->
   <div id="ebr-main-content">
+    <button class="btn-logout" id="btn-logout">Déconnexion</button>
+    <div style="clear:both;"></div>
+    
     <form id="ebr-form">
-      <input type="hidden" id="ebr-uniqueId" name="IDUnique" />
-
       <label>Type de Vélo *</label>
-      <select name="TypeVelo" id="ebr-type" required>
+      <select id="ebr-type" required>
         <option value="">Sélectionner</option>
         <option value="VTTAE">VTTAE</option>
         <option value="SUV/VTC/Ville">SUV/VTC/Ville</option>
@@ -51,117 +64,111 @@
       </select>
 
       <label>Marque du vélo *</label>
-      <select name="Marque" id="ebr-marque" required>
+      <select id="ebr-marque" required>
         <option value="">Sélectionner</option>
-        <option>Amflow</option><option>Bergamont</option><option>BH</option><option>Bianchi</option><option>Bulls</option><option>Cannondale</option><option>Canyon</option><option>Conway</option><option>Corratec</option><option>Cube</option><option>Decathlon</option><option>Focus</option><option>Ghost</option><option>Giant</option><option>GT</option><option>Haibike</option><option>Husqvarna</option><option>KTM</option><option>Lapierre</option><option>Liv</option><option>Marin</option><option>Merida</option><option>Mondraker</option><option>Moustache</option><option>Orbea</option><option>Polygon</option><option>Raymon</option><option>Rossignol</option><option>Santa Cruz</option><option>Scott</option><option>Stevens</option><option>Sunn</option><option>Trek</option>
+        <option>Bergamont</option><option>BH</option><option>Bulls</option><option>Cannondale</option><option>Canyon</option><option>Cube</option><option>Decathlon</option><option>Focus</option><option>Ghost</option><option>Giant</option><option>Haibike</option><option>KTM</option><option>Lapierre</option><option>Liv</option><option>Mondraker</option><option>Moustache</option><option>Orbea</option><option>Raymon</option><option>Santa Cruz</option><option>Scott</option><option>Sunn</option><option>Trek</option>
       </select>
 
       <label>Modèle *</label>
-      <input type="text" name="Modele" id="ebr-modele" required />
+      <input type="text" id="ebr-modele" placeholder="ex: Moustache Game 6" required />
 
       <label>Année *</label>
-      <select name="Annee" id="ebr-yearSelect" required>
+      <select id="ebr-yearSelect" required>
         <option value="">Sélectionner</option>
       </select>
 
       <button type="button" id="ebr-search-btn">🔍 Vérifier le prix neuf sur Google</button>
 
       <label>Prix d'origine (€) *</label>
-      <input type="number" name="PrixOrigine" id="ebr-prix" required />
+      <input type="number" id="ebr-prix" placeholder="Prix public TTC" required />
 
       <label>Kilométrage *</label>
-      <input type="number" name="Kilometrage" id="ebr-km" required />
+      <input type="number" id="ebr-km" placeholder="Distance totale" required />
 
       <label>Motorisation *</label>
-      <select name="Motorisation" id="ebr-moteur" required>
+      <select id="ebr-moteur" required>
         <option value="">Sélectionner</option>
-        <option>Bosch</option><option>Yamaha</option><option>Shimano</option><option>Avinox</option>
+        <option>Bosch</option><option>Yamaha</option><option>Shimano</option>
       </select>
 
       <label>Capacité batterie (Wh) *</label>
-      <input type="number" name="CapaciteBatterie" id="ebr-batterie" required />
+      <input type="number" id="ebr-batterie" placeholder="ex: 625" required />
 
       <div class="ebr-tva-container">
-        <label>Régime de TVA (obligatoire) *</label>
+        <label>Régime de TVA *</label>
         <label class="ebr-tva-option">
-          <input type="checkbox" id="ebr-tva-marge" class="tva-check"> Achat en TVA sur Marge
+          <input type="radio" name="tva" value="marge" checked> Achat en TVA sur Marge
         </label>
         <label class="ebr-tva-option">
-          <input type="checkbox" id="ebr-tva-classique" class="tva-check"> Achat en TVA Classique
+          <input type="radio" name="tva" value="classique"> Achat en TVA Classique (HT)
         </label>
       </div>
       
-      <button type="submit" id="ebr-submit-btn">Estimer mes tarifs</button>
+      <button type="submit" class="btn-main" id="ebr-submit-btn">Calculer la reprise</button>
     </form>
 
     <div class="ebr-results-container">
-      <div class="ebr-price-box highlight">
-        <span>Tarif de Reprise</span>
+      <div class="ebr-price-box">
+        <span>Estimation de Reprise</span>
         <div id="res-reprise">-- €</div>
       </div>
-      <div class="ebr-price-box">
-        <span>Tarif de Revente</span>
-        <div id="res-revente">-- €</div>
-      </div>
     </div>
 
-    <!-- Section pour afficher le nombre de vélos -->
-    <div id="ebr-sample-info">
-      Calcul basé sur <span id="res-count">0</span> vélo(s) similaire(s) en base.
+    <div id="ebr-sample-info" style="display:none;">
+      Basé sur <span id="res-count">0</span> vélos similaires.
     </div>
 
-    <div id="ebr-email-section">
-      <label>Adresse E-mail du destinataire</label>
-      <input type="email" id="ebr-user-email" placeholder="exemple@mail.com">
-      <button type="button" id="ebr-mailto-btn">Envoyer le tarif par E-mail</button>
-    </div>
-
-    <div id="ebr-error">❌ Erreur de calcul. Veuillez réessayer.</div>
+    <div id="ebr-error">❌ Erreur de calcul. Veuillez vérifier les champs.</div>
   </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
   <script>
     (function () {
-      const HASH_KEY = "28406f3871e106b1bb54c647618c087e839b8564d0856ed822f6461fd29de4f2";
+      // CONFIGURATION SUPABASE
+      const SUPABASE_URL = "https://tjcswndqjussqkhdapsl.supabase.co";
+      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqY3N3bmRxanVzc3FraGRhcHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMDc3NDMsImV4cCI6MjA5MzU4Mzc0M30.VqlLGNaXKR71rUFE66Yww7c_-tg9MDl0bxiB-7PMQKg"; // <--- REMPLACER PAR TA ANON KEY
+      const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
       const PYTHON_API_URL = "https://ebikereborn-ebikereborn-pricing.hf.space/estimate";
+      const HASH_KEY = "28406f3871e106b1bb54c647618c087e839b8564d0856ed822f6461fd29de4f2";
 
-      const lockScreen = document.getElementById("ebr-lock-screen");
+      // Elements UI
+      const authScreen = document.getElementById("ebr-auth-screen");
       const mainContent = document.getElementById("ebr-main-content");
-      const passInput = document.getElementById("ebr-auth-pass");
-      const authBtn = document.getElementById("ebr-auth-btn");
-      const authError = document.getElementById("auth-error");
+      const authErrorMsg = document.getElementById("auth-error-msg");
+      const yearSelect = document.getElementById("ebr-yearSelect");
+      const resReprise = document.getElementById("res-reprise");
+      const resCount = document.getElementById("res-count");
+      const sampleInfo = document.getElementById("ebr-sample-info");
 
-      const tvaMarge = document.getElementById("ebr-tva-marge");
-      const tvaClassique = document.getElementById("ebr-tva-classique");
-
-      tvaMarge.addEventListener("change", () => { if(tvaMarge.checked) tvaClassique.checked = false; });
-      tvaClassique.addEventListener("change", () => { if(tvaClassique.checked) tvaMarge.checked = false; });
-
-      authBtn.addEventListener("click", function() {
-          const hashedInput = CryptoJS.SHA256(passInput.value).toString().toLowerCase();
-          if(hashedInput === HASH_KEY.toLowerCase()) {
-              lockScreen.style.display = "none";
+      // 1. GESTION AUTHENTIFICATION
+      async function checkSession() {
+          const { data: { session } } = await _supabase.auth.getSession();
+          if (session) {
+              authScreen.style.display = "none";
               mainContent.style.display = "block";
+          }
+      }
+      checkSession();
+
+      document.getElementById("btn-login").addEventListener("click", async () => {
+          const email = document.getElementById("auth-email").value;
+          const password = document.getElementById("auth-password").value;
+          const { error } = await _supabase.auth.signInWithPassword({ email, password });
+          
+          if (error) {
+              authErrorMsg.style.display = "block";
+              authErrorMsg.innerText = "Erreur : " + error.message;
           } else {
-              authError.style.display = "block";
+              location.reload();
           }
       });
 
-      const form = document.getElementById("ebr-form");
-      const yearSelect = document.getElementById("ebr-yearSelect");
-      const btn = document.getElementById("ebr-submit-btn");
-      const searchBtn = document.getElementById("ebr-search-btn");
-      const resReprise = document.getElementById("res-reprise");
-      const resRevente = document.getElementById("res-revente");
-      const sampleInfo = document.getElementById("ebr-sample-info");
-      const resCount = document.getElementById("res-count");
-      const errorBox = document.getElementById("ebr-error");
-      const emailSection = document.getElementById("ebr-email-section");
-      const mailtoBtn = document.getElementById("ebr-mailto-btn");
+      document.getElementById("btn-logout").addEventListener("click", async () => {
+          await _supabase.auth.signOut();
+          location.reload();
+      });
 
-      let globalResult = { reprise: "", revente: "" };
-
+      // 2. LOGIQUE CALCULATEUR
       const currentYear = new Date().getFullYear();
       for (let y = currentYear; y >= 2016; y--) {
         const opt = document.createElement("option");
@@ -169,30 +176,27 @@
         yearSelect.appendChild(opt);
       }
 
-      searchBtn.addEventListener("click", function() {
+      document.getElementById("ebr-search-btn").addEventListener("click", function() {
         const marque = document.getElementById("ebr-marque").value;
         const modele = document.getElementById("ebr-modele").value;
-        const annee = document.getElementById("ebr-yearSelect").value;
-        if (!marque || !modele) { alert("Veuillez saisir au moins la marque et le modèle."); return; }
-        const query = encodeURIComponent(`prix neuf vélo électrique ${marque} ${modele} ${annee}`);
+        if (!marque || !modele) { alert("Saisissez la marque et le modèle."); return; }
+        const query = encodeURIComponent(`prix neuf vélo électrique ${marque} ${modele}`);
         window.open(`https://www.google.com/search?q=${query}`, '_blank');
       });
 
-      form.addEventListener("submit", async function (e) {
+      document.getElementById("ebr-form").addEventListener("submit", async function (e) {
         e.preventDefault();
-
-        if (!tvaMarge.checked && !tvaClassique.checked) {
-          alert("Veuillez sélectionner un régime de TVA (Marge ou Classique).");
-          return;
-        }
-
+        
+        const btn = document.getElementById("ebr-submit-btn");
+        const errorBox = document.getElementById("ebr-error");
+        
         errorBox.style.display = "none";
-        emailSection.style.display = "none";
         sampleInfo.style.display = "none";
         btn.disabled = true;
-        btn.textContent = "Calcul dynamique...";
+        btn.textContent = "Calcul en cours...";
         resReprise.textContent = "⏳";
-        resRevente.textContent = "⏳";
+
+        const tvaType = document.querySelector('input[name="tva"]:checked').value;
 
         const payload = {
           access_token: HASH_KEY,
@@ -213,66 +217,30 @@
             body: JSON.stringify(payload)
           });
 
-          if (!response.ok) throw new Error("Réponse serveur incorrecte");
           const result = await response.json();
 
           if (result && !result.error) {
-            let rawReprise = result.reprise;
-            let labelReprise = "TTC";
+            let price = result.reprise;
+            let label = "TTC";
             
-            if (tvaClassique.checked) {
-              rawReprise = Math.round(rawReprise * 0.833);
-              labelReprise = "HT";
+            if (tvaType === "classique") {
+              price = Math.round(price * 0.833);
+              label = "HT";
             }
 
-            globalResult.reprise = rawReprise.toLocaleString() + " € " + labelReprise;
-            globalResult.revente = result.revente.toLocaleString() + " € TTC";
-            
-            resReprise.textContent = globalResult.reprise;
-            resRevente.textContent = globalResult.revente;
-            
-            // Affichage du nombre de vélos (cherche 'count' ou 'n_samples' dans votre JSON API)
-            // On utilise result.count car c'est le standard pour ce type de retour
+            resReprise.textContent = price.toLocaleString() + " € " + label;
             resCount.textContent = result.count || result.n_samples || "0";
             sampleInfo.style.display = "block";
-
-            emailSection.style.display = "block";
           } else {
-            throw new Error(result.error || "Erreur inconnue");
+            throw new Error();
           }
         } catch (err) {
           errorBox.style.display = "block";
           resReprise.textContent = "-- €";
-          resRevente.textContent = "-- €";
         } finally {
           btn.disabled = false;
-          btn.textContent = "Estimer mes tarifs";
+          btn.textContent = "Calculer la reprise";
         }
-      });
-
-      mailtoBtn.addEventListener("click", function() {
-        const destinataire = document.getElementById("ebr-user-email").value;
-        if(!destinataire || !destinataire.includes('@')) { alert("Merci de saisir une adresse email valide."); return; }
-
-        const marque = document.getElementById("ebr-marque").value;
-        const modele = document.getElementById("ebr-modele").value;
-        const typeVelo = document.getElementById("ebr-type").value;
-        const annee = document.getElementById("ebr-yearSelect").value;
-        const km = document.getElementById("ebr-km").value;
-        const moteur = document.getElementById("ebr-moteur").value;
-
-        const sujet = encodeURIComponent("Estimation Reprise : " + marque + " " + modele);
-        
-        let corpsTexte = `Bonjour,\n\nVoici l'estimation pour votre vélo :\n\n`;
-        corpsTexte += `Type : ${typeVelo}\n`;
-        corpsTexte += `Modèle : ${marque} ${modele}\n`;
-        corpsTexte += `Année : ${annee}\n`;
-        corpsTexte += `Motorisation : ${moteur}\n`;
-        corpsTexte += `Kilométrage : ${km} km\n\n`;
-        corpsTexte += `💰 TARIF DE RACHAT : ${globalResult.reprise}\n\n`;
-        corpsTexte += `Valable 14 jours sous réserve de vérification.`;
-
-        window.location.href = `mailto:${destinataire}?subject=${sujet}&body=${encodeURIComponent(corpsTexte)}`;
       });
     })();
   </script>
