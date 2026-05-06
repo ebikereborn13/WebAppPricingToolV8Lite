@@ -153,94 +153,84 @@
       const sampleInfo = document.getElementById("ebr-sample-info");
 
       // 1. GESTION AUTHENTIFICATION
-      async function checkSession() {
-          const { data: { session } } = await _supabase.auth.getSession();
-          if (session) {
-              authScreen.style.display = "none";
-              mainContent.style.display = "block";
-          }
-      }
-      checkSession();
-
-      // gestion nouveau mot de passe :
-
+     // 1. DÉFINITION DES ÉCRANS
 const resetScreen = document.getElementById("ebr-reset-screen");
 
-// Écouteur d'état global (Détecte la connexion, déconnexion et RÉCUPÉRATION)
+// Fonction "Nettoyeur" : un seul écran affiché à la fois
+function showScreen(screenName) {
+    authScreen.style.display = "none";
+    mainContent.style.display = "none";
+    resetScreen.style.display = "none";
+
+    if (screenName === 'auth') authScreen.style.display = "block";
+    if (screenName === 'main') mainContent.style.display = "block";
+    if (screenName === 'reset') resetScreen.style.display = "block";
+}
+
+// 2. LE CERVEAU (Gestion des changements d'état)
 _supabase.auth.onAuthStateChange((event, session) => {
     if (event === "PASSWORD_RECOVERY") {
-        // L'utilisateur vient de cliquer sur le lien du mail
-        authScreen.style.display = "none";
-        mainContent.style.display = "none";
-        resetScreen.style.display = "block";
-    } else if (session && event !== "INITIAL_SESSION") {
-        // Connexion normale réussie
-        authScreen.style.display = "none";
-        mainContent.style.display = "block";
-        resetScreen.style.display = "none";
+        showScreen('reset');
+    } else if (session) {
+        // Si on est en train de reset, on ne switch pas sur le main tout de suite
+        if (resetScreen.style.display !== "block") {
+            showScreen('main');
+        }
+    } else {
+        showScreen('auth');
     }
 });
 
-// Bouton pour ENREGISTRER le nouveau mot de passe
+// 3. ACTIONS DES BOUTONS
+
+// Connexion
+document.getElementById("btn-login").addEventListener("click", async () => {
+    const email = document.getElementById("auth-email").value;
+    const password = document.getElementById("auth-password").value;
+    const { error } = await _supabase.auth.signInWithPassword({ email, password });
+    
+    if (error) {
+        authErrorMsg.style.display = "block";
+        authErrorMsg.innerText = "Erreur : " + error.message;
+    }
+    // Pas besoin de reload(), onAuthStateChange s'occupe de l'affichage !
+});
+
+// Mot de passe oublié (Envoi du mail)
+document.getElementById("btn-forgot").addEventListener("click", async () => {
+    const email = document.getElementById("auth-email").value;
+    if (!email) { alert("Saisis ton email d'abord !"); return; }
+
+    const { error } = await _supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.href,
+    });
+
+    if (error) {
+        alert("Erreur : " + error.message);
+    } else {
+        alert("Email de réinitialisation envoyé !");
+    }
+});
+
+// Mise à jour du mot de passe (Le formulaire final)
 document.getElementById("btn-update-password").addEventListener("click", async () => {
     const newPass = document.getElementById("new-password").value;
-    const resetError = document.getElementById("reset-error-msg");
-
-    if (newPass.length < 6) {
-        alert("Le mot de passe doit faire au moins 6 caractères.");
-        return;
-    }
+    if (newPass.length < 6) { alert("6 caractères minimum !"); return; }
 
     const { error } = await _supabase.auth.updateUser({ password: newPass });
 
     if (error) {
-        resetError.style.display = "block";
-        resetError.innerText = "Erreur : " + error.message;
+        alert("Erreur : " + error.message);
     } else {
-        alert("Mot de passe mis à jour avec succès !");
-        // Une fois mis à jour, on peut afficher le calculateur
-        resetScreen.style.display = "none";
-        mainContent.style.display = "block";
+        alert("✅ Mot de passe mis à jour !");
+        showScreen('main'); // On débloque enfin le calculateur
     }
 });
 
-      document.getElementById("btn-login").addEventListener("click", async () => {
-          const email = document.getElementById("auth-email").value;
-          const password = document.getElementById("auth-password").value;
-          const { error } = await _supabase.auth.signInWithPassword({ email, password });
-          
-          if (error) {
-              authErrorMsg.style.display = "block";
-              authErrorMsg.innerText = "Erreur : " + error.message;
-          } else {
-              location.reload();
-          }
-      });
-
-      document.getElementById("btn-logout").addEventListener("click", async () => {
-          await _supabase.auth.signOut();
-          location.reload();
-      });
-      
-      // GESTION DU MOT DE PASSE OUBLIÉ
-document.getElementById("btn-forgot").addEventListener("click", async () => {
-    const email = document.getElementById("auth-email").value;
-    
-    if (!email) {
-        alert("Veuillez saisir votre adresse email pour recevoir le lien de réinitialisation.");
-        return;
-    }
-
-    const { error } = await _supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.href, // Redirige l'utilisateur sur cette même page
-    });
-
-    if (error) {
-        authErrorMsg.style.display = "block";
-        authErrorMsg.innerText = "Erreur : " + error.message;
-    } else {
-        alert("Un email de réinitialisation a été envoyé à : " + email);
-    }
+// Déconnexion
+document.getElementById("btn-logout").addEventListener("click", async () => {
+    await _supabase.auth.signOut();
+    // Le cerveau (onAuthStateChange) renverra l'utilisateur vers 'auth' automatiquement
 });
       // 2. LOGIQUE CALCULATEUR
       const currentYear = new Date().getFullYear();
