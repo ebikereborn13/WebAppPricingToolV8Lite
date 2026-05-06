@@ -14,6 +14,8 @@
     #ebr-calculator .btn-main:hover { background: #e65c00; }
     #ebr-calculator .btn-main:disabled { background: #ccc; cursor: not-allowed; }
     #ebr-calculator .btn-logout { background: transparent; color: #666; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; float: right; border-radius: 4px; }
+    #ebr-calculator .btn-forgot { display: block; margin-top: 15px; font-size: 13px; color: #666; text-decoration: underline; background: none; border: none; cursor: pointer; }
+    #ebr-calculator .btn-forgot:hover { color: #FF6600; }
 
     /* Login Screen */
     #ebr-auth-screen { background: #f4f4f4; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
@@ -46,6 +48,7 @@
     <input type="email" id="auth-email" placeholder="Votre email professionnel">
     <input type="password" id="auth-password" placeholder="Mot de passe">
     <button class="btn-main" id="btn-login">Se connecter</button>
+    <button class="btn-forgot" id="btn-forgot">Mot de passe oublié ?</button>
     <p class="auth-error" id="auth-error-msg">Email ou mot de passe incorrect</p>
   </div>
 
@@ -167,7 +170,27 @@
           await _supabase.auth.signOut();
           location.reload();
       });
+      
+      // GESTION DU MOT DE PASSE OUBLIÉ
+document.getElementById("btn-forgot").addEventListener("click", async () => {
+    const email = document.getElementById("auth-email").value;
+    
+    if (!email) {
+        alert("Veuillez saisir votre adresse email pour recevoir le lien de réinitialisation.");
+        return;
+    }
 
+    const { error } = await _supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.href, // Redirige l'utilisateur sur cette même page
+    });
+
+    if (error) {
+        authErrorMsg.style.display = "block";
+        authErrorMsg.innerText = "Erreur : " + error.message;
+    } else {
+        alert("Un email de réinitialisation a été envoyé à : " + email);
+    }
+});
       // 2. LOGIQUE CALCULATEUR
       const currentYear = new Date().getFullYear();
       for (let y = currentYear; y >= 2016; y--) {
