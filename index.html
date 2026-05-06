@@ -52,6 +52,15 @@
     <p class="auth-error" id="auth-error-msg">Email ou mot de passe incorrect</p>
   </div>
 
+  <!-- SCREEN 1.5: RESET PASSWORD FORM (Caché par défaut) -->
+<div id="ebr-reset-screen" style="display:none; background: #f4f4f4; padding: 30px; border-radius: 10px; text-align: center;">
+  <h2>🔒 Nouveau mot de passe</h2>
+  <p>Saisissez votre nouveau mot de passe ci-dessous.</p>
+  <input type="password" id="new-password" placeholder="Nouveau mot de passe (min. 6 caractères)">
+  <button class="btn-main" id="btn-update-password">Enregistrer le mot de passe</button>
+  <p id="reset-error-msg" class="auth-error"></p>
+</div>
+
   <!-- SCREEN 2: CALCULATEUR -->
   <div id="ebr-main-content">
     <button class="btn-logout" id="btn-logout">Déconnexion</button>
@@ -152,6 +161,48 @@
           }
       }
       checkSession();
+
+      // gestion nouveau mot de passe :
+
+const resetScreen = document.getElementById("ebr-reset-screen");
+
+// Écouteur d'état global (Détecte la connexion, déconnexion et RÉCUPÉRATION)
+_supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY") {
+        // L'utilisateur vient de cliquer sur le lien du mail
+        authScreen.style.display = "none";
+        mainContent.style.display = "none";
+        resetScreen.style.display = "block";
+    } else if (session && event !== "INITIAL_SESSION") {
+        // Connexion normale réussie
+        authScreen.style.display = "none";
+        mainContent.style.display = "block";
+        resetScreen.style.display = "none";
+    }
+});
+
+// Bouton pour ENREGISTRER le nouveau mot de passe
+document.getElementById("btn-update-password").addEventListener("click", async () => {
+    const newPass = document.getElementById("new-password").value;
+    const resetError = document.getElementById("reset-error-msg");
+
+    if (newPass.length < 6) {
+        alert("Le mot de passe doit faire au moins 6 caractères.");
+        return;
+    }
+
+    const { error } = await _supabase.auth.updateUser({ password: newPass });
+
+    if (error) {
+        resetError.style.display = "block";
+        resetError.innerText = "Erreur : " + error.message;
+    } else {
+        alert("Mot de passe mis à jour avec succès !");
+        // Une fois mis à jour, on peut afficher le calculateur
+        resetScreen.style.display = "none";
+        mainContent.style.display = "block";
+    }
+});
 
       document.getElementById("btn-login").addEventListener("click", async () => {
           const email = document.getElementById("auth-email").value;
