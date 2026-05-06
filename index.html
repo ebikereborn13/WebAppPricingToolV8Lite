@@ -289,15 +289,15 @@ document.getElementById("btn-logout").addEventListener("click", async () => {
     // Le cerveau (onAuthStateChange) renverra l'utilisateur vers 'auth' automatiquement
 });
 
-      // --- PARTIE C : ENREGISTREMENT DE LA DEMANDE ---
+     // --- PARTIE C : ENREGISTREMENT DE LA DEMANDE ---
 document.getElementById("btn-validate-request").addEventListener("click", async () => {
     const btn = document.getElementById("btn-validate-request");
     
     // 1. VERIFICATION : On récupère l'utilisateur actuel
-    const { data: { user } } = await _supabase.auth.getUser();
+    const { data: { user }, error: authError } = await _supabase.auth.getUser();
 
-    if (!user) {
-        alert("Session expirée. Reconnectez-vous.");
+    if (authError || !user) {
+        alert("Session expirée ou utilisateur non trouvé. Reconnectez-vous.");
         return;
     }
 
@@ -305,18 +305,19 @@ document.getElementById("btn-validate-request").addEventListener("click", async 
     const validUntil = new Date();
     validUntil.setDate(validUntil.getDate() + 15);
 
-    // On injecte l'email dans l'objet details avant l'envoi
+    // On s'assure que l'objet d'estimation existe et on y injecte l'email
     if (window.currentEstimation) {
+        // C'est cette ligne qui permet l'affichage sur ta page Admin
         window.currentEstimation.EmailDemandeur = user.email;
     } else {
-        alert("Erreur : aucune estimation trouvée.");
+        alert("Erreur : aucune estimation n'a été calculée.");
         return;
     }
 
-    // 3. ENVOI
+    // 3. ENVOI A SUPABASE
     const { error } = await _supabase.from('estimations').insert([{
-        user_id: user.id,
-        details: window.currentEstimation,
+        user_id: user.id, // L'identifiant technique UUID (obligatoire pour la base)
+        details: window.currentEstimation, // L'objet complet contenant l'email, prix neuf, etc.
         date_validite: validUntil.toISOString(),
         statut: 'en_attente'
     }]);
@@ -325,9 +326,9 @@ document.getElementById("btn-validate-request").addEventListener("click", async 
         console.error("Erreur Supabase:", error);
         alert("Erreur lors de l'envoi : " + error.message);
     } else {
-        alert("✅ Demande envoyée !");
-        btn.style.display = "none";
-        loadHistory(); 
+        alert("✅ Demande envoyée avec succès ! (Contact : " + user.email + ")");
+        btn.style.display = "none"; // On cache le bouton pour éviter les doubles envois
+        if (typeof loadHistory === "function") loadHistory(); 
     }
 });
       
