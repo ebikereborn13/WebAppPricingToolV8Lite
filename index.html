@@ -304,7 +304,7 @@ document.getElementById("btn-logout").addEventListener("click", async () => {
           validUntil.setDate(validUntil.getDate() + 15);
 
           const { error } = await _supabase.from('estimations').insert([{
-              user_id: user.id,
+              user_id: user.email,
               details: window.currentEstimation,
               date_validite: validUntil.toISOString(),
               statut: 'en_attente'
