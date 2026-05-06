@@ -290,34 +290,46 @@ document.getElementById("btn-logout").addEventListener("click", async () => {
 });
 
       // --- PARTIE C : ENREGISTREMENT DE LA DEMANDE ---
-      document.getElementById("btn-validate-request").addEventListener("click", async () => {
-          const btn = document.getElementById("btn-validate-request");
-          const { data: { user } } = await _supabase.auth.getUser();
+document.getElementById("btn-validate-request").addEventListener("click", async () => {
+    const btn = document.getElementById("btn-validate-request");
+    
+    // 1. VERIFICATION : On récupère l'utilisateur actuel
+    const { data: { user } } = await _supabase.auth.getUser();
 
-          if (!user) {
-              alert("Session expirée. Reconnectez-vous.");
-              return;
-          }
+    if (!user) {
+        alert("Session expirée. Reconnectez-vous.");
+        return;
+    }
 
-          // Date de validité : +15 jours
-          const validUntil = new Date();
-          validUntil.setDate(validUntil.getDate() + 15);
+    // 2. PREPARATION DES DONNEES
+    const validUntil = new Date();
+    validUntil.setDate(validUntil.getDate() + 15);
 
-          const { error } = await _supabase.from('estimations').insert([{
-              user_id: user.email,
-              details: window.currentEstimation,
-              date_validite: validUntil.toISOString(),
-              statut: 'en_attente'
-          }]);
+    // On injecte l'email dans l'objet details avant l'envoi
+    if (window.currentEstimation) {
+        window.currentEstimation.EmailDemandeur = user.email;
+    } else {
+        alert("Erreur : aucune estimation trouvée.");
+        return;
+    }
 
-          if (error) {
-              alert("Erreur : " + error.message);
-          } else {
-              alert("✅ Demande envoyée !");
-              btn.style.display = "none";
-              loadHistory(); // On rafraîchit l'historique
-          }
-      });
+    // 3. ENVOI
+    const { error } = await _supabase.from('estimations').insert([{
+        user_id: user.id,
+        details: window.currentEstimation,
+        date_validite: validUntil.toISOString(),
+        statut: 'en_attente'
+    }]);
+
+    if (error) {
+        console.error("Erreur Supabase:", error);
+        alert("Erreur lors de l'envoi : " + error.message);
+    } else {
+        alert("✅ Demande envoyée !");
+        btn.style.display = "none";
+        loadHistory(); 
+    }
+});
       
       // 2. LOGIQUE CALCULATEUR
       const currentYear = new Date().getFullYear();
