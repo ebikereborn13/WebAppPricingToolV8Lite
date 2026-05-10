@@ -172,9 +172,12 @@ async function loadHistory() {
     if (!user) return;
 
     const listContainer = document.getElementById("history-list");
+    const now = new Date().toISOString(); // Récupère l'heure actuelle au format ISO
+
     const { data, error } = await _supabase
         .from('estimations')
         .select('*')
+        .gt('date_validite', now) // FILTRE : Seulement si la date de validité est dans le futur
         .order('date_creation', { ascending: false })
         .limit(5);
 
@@ -184,7 +187,7 @@ async function loadHistory() {
     }
 
     if (!data || data.length === 0) {
-        listContainer.innerHTML = "<p style='color:#888;'>Aucune estimation enregistrée.</p>";
+        listContainer.innerHTML = "<p style='color:#888;'>Aucune estimation valide en cours.</p>";
         return;
     }
 
