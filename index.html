@@ -125,6 +125,12 @@
       <button id="btn-validate-request" style="display:none; margin-top:10px; background:#2ecc71; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; width:100%;">
         📩 Demander validation officielle
       </button>
+      <!-- BLOC ALERTE ESTIMATION SUPERIEURE -->
+      <div id="ebr-higher-estimate-box" style="display:none; margin-top:15px; border-top:1px dashed #FF6600; padding-top:12px; font-size:0.85em; font-style:italic; color:#555; text-align:left;">
+  Vous trouvez une estimation supérieure ailleurs (Upway, Mint, etc...) ? 
+  Merci de nous envoyer une capture d'écran de votre estimation par mail à 
+      <a id="ebr-mailto-link" href="#" style="color:#FF6600; font-weight:bold; text-decoration:underline;">contact@ebikereborn.fr</a>. On pourra peut être s'aligner !!!
+      </div>
     </div>
   </div>
 
@@ -334,6 +340,30 @@ document.getElementById("btn-validate-request").addEventListener("click", async 
         if (typeof loadHistory === "function") loadHistory(); 
     }
 });
+      function updateMailtoLink(data) {
+  if (!data) return;
+
+  const email = "contact@ebikereborn.fr";
+  const subject = encodeURIComponent(`Estimation supérieure trouvée - ${data.Marque} ${data.Modele}`);
+  
+  const body = encodeURIComponent(
+    `Bonjour l'équipe E-bike Reborn,\n\n` +
+    `J'ai trouvé une estimation supérieure ailleurs pour mon vélo. Voici les détails de ma simulation :\n\n` +
+    `- Type : ${data.TypeVelo}\n` +
+    `- Marque : ${data.Marque}\n` +
+    `- Modèle : ${data.Modele}\n` +
+    `- Année : ${data.Annee}\n` +
+    `- Kilométrage : ${data.Kilometrage} km\n` +
+    `- Motorisation : ${data.Motorisation}\n` +
+    `- Batterie : ${data.CapaciteBatterie} Wh\n` +
+    `- Régime TVA : ${data.regime_tva}\n` +
+    `- Votre estimation : ${data.reprise} €\n\n` +
+    `[Merci de joindre votre capture d'écran à ce mail]`
+  );
+
+  const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
+  document.getElementById("ebr-mailto-link").setAttribute("href", mailtoUrl);
+}
       
       // 2. LOGIQUE CALCULATEUR
       const currentYear = new Date().getFullYear();
@@ -394,6 +424,9 @@ document.getElementById("btn-validate-request").addEventListener("click", async 
             
             // 1. On affiche le bouton de demande de validation
             document.getElementById("btn-validate-request").style.display = "block";
+            // On affiche le bloc d'estimation supérieure et on génère le lien mailto
+            document.getElementById("ebr-higher-estimate-box").style.display = "block";
+            updateMailtoLink(window.currentEstimation);
             
             // 2. On prépare l'objet avec TOUTES les infos pour la base de données
             // On l'enregistre dans window.currentEstimation pour que le bouton de validation puisse y accéder
