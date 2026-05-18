@@ -454,6 +454,13 @@ document.getElementById("btn-validate-request").addEventListener("click", async 
           btn.textContent = "Calculer la reprise";
         }
       });
+      document.getElementById("ebr-mailto-link").addEventListener("click", function(e) {
+          const href = this.getAttribute("href");
+          if (href && href !== "#") {
+              window.location.href = href;
+          }
+          e.preventDefault();
+      });
     })();
   </script>
 </div>
